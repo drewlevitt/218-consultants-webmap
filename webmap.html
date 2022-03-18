@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+<!--     <title>THE FUTURE OF TRANSPORTATION PLANNING brought to you by A TON OF BADASS NEW GODS</title> -->
+    
+    <title>Mobility Hub Interactive Suitability Analysis</title>
+    <link rel="stylesheet" href="webmap_files/leaflet.css">
+
+    <script src="webmap_files/jquery.js"></script>
+    <script src="webmap_files/leaflet.js"></script>
+
+    <!--Links for sliders-->
+    <link rel="stylesheet" href="webmap_files/jquery-ui.css">
+    <script src="webmap_files/jquery-1.js"></script>
+    <script src="webmap_files/jquery-ui.js"></script>
+    <link rel="stylesheet" href="webmap_files/style.css">
+    <!--End of slider imports-->
+    
+    <!--Importing math for dot product-->
+    <script src="webmap_files/numeric-1.js"></script>
+    
+    <!--Add the dataset-->
+    <script src="webmap_files/oakland.js"></script>
+    
+    <style type="text/css">
+    
+      body { 
+        margin: 0; 
+        padding: 0; 
+        font-family: Helvetica, Arial, sans-serif;
+      }
+    
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 70%;
+        z-index:-1;
+      }
+    
+      #overlay {
+        position: absolute;
+        top: 10px;
+        left: 80px;
+        padding: 20px;
+        background-color: rgba(255,255,255,0.9);
+        font-size: 24px;
+        font-weight: bold;
+      }
+
+      .info {
+          padding: 6px 8px;
+          font: 14px/16px Helvetica, Arial, sans-serif;
+          background: white;
+          background: rgba(255,255,255,0.9);
+          box-shadow: 0 0 15px rgba(0,0,0,0.2);
+          border-radius: 5px;
+      }
+      .info h4 {
+          margin: 0 0 5px;
+          color: #777;
+      }
+
+      .legend {
+        line-height: 18px;
+        color: #555;
+        margin:10px;
+      }
+      .legend i {
+        width: 18px;
+        height: 18px;
+        float: right;
+        margin-left: 8px;
+        opacity: 0.7;
+      }
+      
+      .description {
+        font-size: 10pt;
+        margin-left: 15px;
+        margin-top: 10px;
+        margin-right: 15px;
+      }
+      
+      #sliders {
+        background-color: rgba(255,255,255,1);
+        cursor: auto;
+        pointer-events: auto;
+        width:30%;
+      }
+            
+      .ui-slider-range { background: #ffffff; }
+      .ui-slider .ui-slider-handle { 
+        width: 2em;
+        text-align: center;
+      }
+      .ui-slider-horizontal .ui-slider-handle { margin-left: -1.0em }
+      
+      .slider {
+        clear: left;
+        width:90%;
+        margin-left: 15px;
+        margin-right: 15px;
+        margin-top: 5px;
+        margin-bottom: 0px;
+      }
+      
+      .slider-title {
+        font-size:10pt;
+        margin-left: 15px;
+        margin-top:10px;
+      }
+    </style>
+    
+</head>
+
+<body>
+
+    <div id="map"></div>
+    
+    <div id="sliders" class="leaflet-top leaflet-right">
+      <div class="description">
+        <h3>About</h3>
+        <p>Use the sliders below to explore different suitability 
+scenarios for where mobility hubs should be placed around Oakland. 
+Choosing a higher weighting for a given index makes that index 
+contribute more to each block group's suitability.</p>
+        <p>For more information about this suitability analysis, 
+including detailed descriptions of each index, please consult the 
+Mobility Hub Suitability Analysis Technical Report available at <a href="http://218consultants.com/reports-and-presentations/" target="_blank">218consultants.com</a>.</p>
+      </div>
+      
+      <div class="description"><h3>Index Weights</h3></div>
+      <div class="slider-title">Low Automobility</div>
+      <div id="auto" class="slider ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"><div class="ui-slider-range ui-widget-header ui-corner-all ui-slider-range-max" style="width: 0%;"></div><span class="ui-slider-handle ui-state-default ui-corner-all" tabindex="0" style="left: 100%;">1.0</span></div>
+      <div class="slider-title">Disadvantaged Populations</div>
+      <div id="disad" class="slider ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"><div class="ui-slider-range ui-widget-header ui-corner-all ui-slider-range-max" style="width: 5%;"></div><span class="ui-slider-handle ui-state-default ui-corner-all" tabindex="0" style="left: 95%;">0.9</span></div>
+      <div class="slider-title">Resiliency</div>
+      <div id="res" class="slider ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"><div class="ui-slider-range ui-widget-header ui-corner-all ui-slider-range-max" style="width: 15%;"></div><span class="ui-slider-handle ui-state-default ui-corner-all" tabindex="0" style="left: 85%;">0.7</span></div>
+      <div class="slider-title">Future Growth Potential</div>
+      <div id="fupo" class="slider ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"><div class="ui-slider-range ui-widget-header ui-corner-all ui-slider-range-max" style="width: 20%;"></div><span class="ui-slider-handle ui-state-default ui-corner-all" tabindex="0" style="left: 80%;">0.6</span></div>
+      <div class="slider-title">New Service Viability</div>
+      <div id="buvi" class="slider ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"><div class="ui-slider-range ui-widget-header ui-corner-all ui-slider-range-max" style="width: 0%;"></div><span class="ui-slider-handle ui-state-default ui-corner-all" tabindex="0" style="left: 100%;">1.0</span></div>
+      <div class="slider-title">High Transportation Connectivity</div>
+      <div id="tcco" class="slider ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"><div class="ui-slider-range ui-widget-header ui-corner-all ui-slider-range-max" style="width: 50%;"></div><span class="ui-slider-handle ui-state-default ui-corner-all" tabindex="0" style="left: 50%;">0.0</span></div>
+      <div class="slider-title">High Land Use Intensity</div>
+      <div id="luco" class="slider ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"><div class="ui-slider-range ui-widget-header ui-corner-all ui-slider-range-max" style="width: 50%;"></div><span class="ui-slider-handle ui-state-default ui-corner-all" tabindex="0" style="left: 50%;">0.0</span></div>
+    </div>
+    <script type="text/javascript">
+    
+    //*******
+    //PREPARING THE DATASET
+    
+    //These are the variable names within the dataset:
+    //'ix_auto_p', 'ix_buvi_p', 'ix_disad_p', 'ix_fupo_p', 'ix_luco_p', 'ix_lufe_p', 'ix_res_p', 'ix_tcco_p', 'ix_tcfe_p', 'sc_all'
+    
+    //Add a new vector with the indices for simplified multiplication
+    dataset.features = dataset.features.map(function(e) { 
+    e.vector = [e.properties.ix_auto_p,
+                e.properties.ix_buvi_p,
+                e.properties.ix_disad_p,
+                e.properties.ix_fupo_p,
+                e.properties.ix_luco_p,
+                e.properties.ix_res_p,
+                e.properties.ix_tcco_p]; 
+    return e;
+    });  
+    
+    //Initialize the weights variable so that we can initialize the popups
+    //These are the weights we used in the sc_all scenario
+    var weights = [1.0, // auto
+                   1.0, // buvi
+                   0.9, // disad
+                   0.6, // fupo
+                   0.0, // luco
+                   0.7, // res
+                   0.0]; // tcco
+    
+    //Take the dot product of the weights and index values and put in variable weightedValue
+    function updateValue() {
+      dataset.features = dataset.features.map(function(e) { 
+        e.weightedValue = numeric.dot(e.vector, weights); 
+        return e;
+      });  
+    }
+    
+    updateValue();
+  
+  // Initialize cutpoints based on ArcMap values; these will change very soon, but good to have a sensical first display
+  var cutpoints = [-1.0, 1.416310, 1.670429, 1.914083, 2.158158, 2.496907, 2.827570, 3.521689];
+//  var colors = ['#d73027','#fc8d59','#fee090','#ffffbf','#e0f3f8','#91bfdb','#4575b4'  // These are from ColorBrewer 2.0 - maybe attribute?
+  var colors = ['#edf8e9','#c7e9c0','#a1d99b','#74c476','#41ab5d','#238b45','#005a32']
+  
+  function getColor(feature) {
+    // Iterate over our several quantiles; if the feature falls into one, return that quantile's color
+    for (var j = 0; j < cutpoints.length; j++) {
+      if(cutpoints[j] < feature.weightedValue && feature.weightedValue <= cutpoints[j+1]) {
+        return colors[j];
+      }
+    }
+    // if this somehow doesn't pick up a feature, mark it gray as a fail safe
+    return 'gray';
+  }
+  
+  //For each feature, returns the styling
+  function mapStyle(feature) {
+    return {
+        fillColor: getColor(feature),
+        color: 'black', opacity: 1, weight: 0.5,
+        opacity: 1,
+        fillOpacity: 0.8,
+    };
+  }
+  
+  //Whenever called, styles the map
+  function colorMap() {
+    if(!overlay)
+      return;
+    //preprocess();
+    overlay.setStyle(mapStyle);
+  }
+    //***********************************************
+    // SET UP THE BACKGROUND MAP
+
+    // create the Leaflet map container
+    var map = L.map('map');
+    
+    // define a function to automate setting up Mapbox layers
+    // function setUpMapboxLayer(id, token) {
+    //     return L.tileLayer('https://{s}.tiles.mapbox.com/v4/' + id + '/{z}/{x}/{y}.png?access_token=' + token, {
+    //         attribution: '&copy; <a href="https://www.mapbox.com/map-feedback/">Mapbox</a> &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+    //     });
+    // }
+    
+    // set up some tile layers and add one to the map
+    // var Stamen_TonerLite = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}.{ext}', {
+    //     attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    //     subdomains: 'abcd',
+    //     minZoom: 0,
+    //     maxZoom: 20,
+    //     ext: 'png'
+    // });
+
+    var Esri_WorldGrayCanvas = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        maxZoom: 16
+    });
+
+    // var normalBasemap = setUpMapboxLayer('leereis.oaa10mhd', 'pk.eyJ1IjoibGVlcmVpcyIsImEiOiJjaWdsNHkyaWEwMThhdXJrcmt0bXp6a2Z0In0.FdOBAP8wZrYj2hEohJGMpw');
+
+    // map.addLayer(normalBasemap);
+    // map.addLayer(Stamen_TonerLite);
+    map.addLayer(Esri_WorldGrayCanvas);
+    
+    //***********************************************
+    // 1. CREATE OVERLAY 
+
+    // specify what the circle markers should look like
+    
+    var overlay;
+    
+    function overlayStyles(color) {
+      var style = {
+        fillColor: color, fillOpacity: 0.8,
+        // border styles
+        color: 'black', opacity: 1, weight: 1
+      };
+      return style;
+    }    
+        
+    //Updates the popup whenever a block group is clicked - not used
+    function whenClicked(e) {
+      e.target.bindPopup(
+        '<b>Suitability: </b>' + e.target.feature.weightedValue.toFixed(2) + '<br />'
+        // http://gis.stackexchange.com/questions/31951/how-to-show-a-popup-on-mouse-over-not-on-click has info on how to show a popup on mouseover instead
+      );
+      e.target.openPopup();
+    }
+             
+    // specify how to load the individual features 
+    var overlayOptions = { 
+        onEachFeature: function (feature, layer) {
+            layer.on({
+//              Removed popups since the numbers won't be meaningful to users
+//               click: whenClicked,
+            });
+        },
+        pointToLayer: function (feature, latlng) {
+            return L.polygon(latlng, overlayStyles('green'));
+        }
+    };
+    
+    // create the layer and add to map
+    overlay = L.geoJson(dataset, overlayOptions); 
+    map.addLayer(overlay);
+    
+    // fit the map window to the data points
+    map.fitBounds(overlay.getBounds());
+    
+    //Add a legend!
+    var legend = L.control({position: 'bottomleft'});
+
+    legend.onAdd = function (map) {
+
+        var div = L.DomUtil.create('div', 'info legend'),
+            //Define the labels
+            grades = ['Most suitable', '', '', '', '', '', 'Least suitable']
+
+        // loop through our density intervals and generate a label with a colored square for each interval
+        for (var i = 0; i < grades.length; i++) {
+            //Uses the colors defined in a list above
+            div.innerHTML +=
+                grades[i]+'<i style="background:' + colors[colors.length - i - 1] + '"></i><br>';
+        }
+
+        return div;
+    };
+
+    legend.addTo(map);
+    
+        
+    /*Define the function that will take in our weights and output a final index*/
+    var sliderList = ["#auto", "#buvi", "#disad", "#fupo", "#luco", "#res", "#tcco"];
+    
+    //This is helpful for initialization but probably not needed thanks to the
+    //updateSingleWeight function
+    function updateWeights() {
+//       Turns out list comprehensions are not implemented in all js versions so commenting this out
+//       weights = [for (x of sliderList) $( x ).slider( "value" )];
+      weights = [
+        $( "#auto" ).slider( "value" ),
+        $( "#buvi" ).slider( "value" ),
+        $( "#disad" ).slider( "value" ),
+        $( "#fupo" ).slider( "value" ),
+        $( "#luco" ).slider( "value" ),
+        $( "#res" ).slider( "value" ),
+        $( "#tcco" ).slider( "value" )
+      ];
+    }
+    
+    //Looks up the name of the slider in the sliderList and replaces the value in weight
+    //with the new value (passed in by the event)
+    function updateSingleWeight(sliderName, value){
+      weights[sliderList.indexOf(sliderName)] = value
+    }
+    
+    function sortNumber(a,b) {
+      return a - b;
+    }
+
+    function quantile_cutpoints(items, n) {
+        items.sort(sortNumber);
+        var size = ~~(items.length / n);
+        var cuts = [items[0] - 1];
+        var done = size;
+        do {
+            cuts.push(items[done - 1]);
+            done = done + size;
+        } while(done + size <= items.length);
+        cuts.push(items[items.length - 1]);
+        return cuts;
+    }
+    
+    var bins = 7;
+
+//    var cutpoints = quantile_cutpoints(arr, bins);
+//    console.log(quantiles);
+
+    function updateCutpoints() {
+      // Zeroth, create an empty Array to contain all the weightedValues
+      values = [];
+      // First, collect each feature's weightedValue
+      for(var i = 0; i < dataset.features.length; i++) {
+        values.push(dataset.features[i].weightedValue);
+      }
+      // Second, assign new cutpoints to the cutpoints variable 
+      cutpoints = quantile_cutpoints(values, bins);
+    }
+    
+    
+    /*Slider functions*/
+      function refreshBlockGroups(event, ui) {
+        var name = '#' + event.target.id;
+        updateSingleWeight(name, ui.value);
+        $(name).find(".ui-slider-handle").text(ui.value.toFixed(1));
+        updateValue();
+        updateCutpoints();
+        colorMap();
+      }
+      
+      $(function() {
+        $( "#auto, #buvi, #disad, #fupo, #luco, #res, #tcco" ).slider({
+          orientation: "horizontal",
+          range: "max",
+          min: -1.0,
+          max: 1.0,
+          step: 0.1,
+          value: 0.0,
+          slide: refreshBlockGroups,
+          change: refreshBlockGroups
+        });
+        $( "#auto" ).slider( "value", 1.0 );
+        $( "#buvi" ).slider( "value", 1.0 );
+        $( "#disad" ).slider( "value", 0.9 );
+        $( "#fupo" ).slider( "value", 0.6 );
+        $( "#luco" ).slider( "value", 0.0 );
+        $( "#res" ).slider( "value", 0.7 );
+        $( "#tcco" ).slider( "value", 0.0 );
+      });
+
+// For reference in setting initial slider values:      
+//var weights = [1.0, // auto
+//               1.0, // buvi
+//               0.9, // disad
+//               0.6, // fupo
+//               0.0, // luco
+//               0.7, // res
+//               0.0] // tcco
+    
+    </script>
+
+</body></html>
